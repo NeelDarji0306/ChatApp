@@ -158,6 +158,17 @@ const removeMember = TryCatch(async (req, res, next) => {
 
   if (chat.members.length <= 3)
     return next(new ErrorHandler("Group must have at least 3 members", 400));
+  if (chat.creator.toString() === userId.toString()) {
+    const remainingMembers = chat.members.filter(
+      (member) => member.toString() !== userId.toString()
+    );
+    const randomElement = Math.floor(Math.random() * remainingMembers.length);
+    const newCreator = remainingMembers[randomElement];
+
+    chat.creator = newCreator;
+    console.log([userId.toString()]);
+    emitEvent(req, REFETCH_CHATS, [userId.toString()]);
+  }
 
   const allChatMembers = chat.members.map((i) => i.toString());
   chat.members = chat.members.filter(
@@ -283,6 +294,13 @@ const getChatDetails = TryCatch(async (req, res, next) => {
 
     if (!chat) return next(new ErrorHandler("Chat not found", 404));
 
+    chat.members = chat.members.filter(
+      (i) => i._id.toString() !== chat.creator.toString()
+    );
+    console.log(chat.members);
+    // console.log(chat.members[0]._id.toString());
+    // console.log(chat.creator.toString());
+
     chat.members = chat.members.map(({ _id, name, avatar }) => ({
       _id,
       name,
@@ -389,7 +407,7 @@ const getMessages = TryCatch(async (req, res, next) => {
 
   if (!chat.members.includes(req.user.toString()))
     return next(
-      new ErrorHandler("You are not allowed to access this chat", 403)
+      new ErrorHandler("You are not allowed to access this chat", 400)
     );
 
   const [messages, totalMessagesCount] = await Promise.all([
