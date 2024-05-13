@@ -30,7 +30,6 @@ const newGroupChat = TryCatch(async (req, res, next) => {
 
   emitEvent(req, ALERT, allMembers, {
     message: `Welcome to ${name} group`,
-    chatId,
   });
   emitEvent(req, REFETCH_CHATS, members);
 
