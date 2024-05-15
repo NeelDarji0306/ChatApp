@@ -10,8 +10,6 @@ import {
   searchUser,
   sendFriendRequest,
 } from "../controllers/user.js";
-import { singleAvatar } from "../middlewares/multer.js";
-import { isAuthenticated } from "../middlewares/auth.js";
 import {
   acceptRequestValidator,
   loginValidator,
@@ -19,16 +17,16 @@ import {
   sendRequestValidator,
   validateHandler,
 } from "../lib/validators.js";
+import { isAuthenticated } from "../middlewares/auth.js";
+import { singleAvatar } from "../middlewares/multer.js";
 
 const app = express.Router();
 
-//http://localhost:3000/user/
 app.post("/new", singleAvatar, registerValidator(), validateHandler, newUser);
 app.post("/login", loginValidator(), validateHandler, login);
 
-//Ater here user must be logged in to access the routes
+// After here user must be logged in to access the routes
 
-// app.get("/me", isAuthenticated, getMyProfile);
 app.use(isAuthenticated);
 
 app.get("/me", getMyProfile);

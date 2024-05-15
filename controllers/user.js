@@ -1,19 +1,19 @@
 import { compare } from "bcrypt";
-import { User } from "../models/user.js";
+import { NEW_REQUEST, REFETCH_CHATS } from "../constants/events.js";
+import { getOtherMember } from "../lib/helper.js";
+import { TryCatch } from "../middlewares/error.js";
 import { Chat } from "../models/chat.js";
 import { Request } from "../models/request.js";
+import { User } from "../models/user.js";
 import {
   cookieOptions,
   emitEvent,
   sendToken,
   uploadFilesToCloudinary,
 } from "../utils/features.js";
-import { TryCatch } from "../middlewares/error.js";
 import { ErrorHandler } from "../utils/utility.js";
-import { NEW_REQUEST, REFETCH_CHATS } from "../constants/events.js";
-import { getOtherMember } from "../lib/helper.js";
 
-//create a new user and add it to the database and save token in cookie
+// Create a new user and save it to the database and save token in cookie
 const newUser = TryCatch(async (req, res, next) => {
   const { name, username, password, bio } = req.body;
 
@@ -37,37 +37,19 @@ const newUser = TryCatch(async (req, res, next) => {
   });
 
   sendToken(res, user, 201, "User created");
-
-  // res.status(201).json({ message: "User created successfully" }); // 201 for successful creation
 });
-
-// const login = async (req, res, next) => {
-//   try {
-//     const { username, password } = req.body;
-
-//     const user = await User.findOne({ username }).select("+password");
-//     if (!user) return next(new Error("Invalid Username"));
-
-//     const isPassMatch = await compare(password, user.password);
-
-//     if (!isPassMatch) return next(new Error("Invalid Password"));
-
-//     sendToken(res, user, 200, `Welcome Back, ${user.name}`);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
 
 // Login user and save token in cookie
 const login = TryCatch(async (req, res, next) => {
   const { username, password } = req.body;
 
   const user = await User.findOne({ username }).select("+password");
+
   if (!user) return next(new ErrorHandler("Invalid Username or Password", 404));
 
-  const isPassMatch = await compare(password, user.password);
+  const isMatch = await compare(password, user.password);
 
-  if (!isPassMatch)
+  if (!isMatch)
     return next(new ErrorHandler("Invalid Username or Password", 404));
 
   sendToken(res, user, 200, `Welcome Back, ${user.name}`);
@@ -84,7 +66,7 @@ const getMyProfile = TryCatch(async (req, res, next) => {
   });
 });
 
-const logout = TryCatch(async (req, res, next) => {
+const logout = TryCatch(async (req, res) => {
   return res
     .status(200)
     .cookie("chat-app-token", "", { ...cookieOptions, maxAge: 0 })
@@ -94,22 +76,22 @@ const logout = TryCatch(async (req, res, next) => {
     });
 });
 
-const searchUser = TryCatch(async (req, res, next) => {
+const searchUser = TryCatch(async (req, res) => {
   const { name = "" } = req.query;
 
-  //finding all my chats
+  // Finding All my chats
   const myChats = await Chat.find({ groupChat: false, members: req.user });
 
-  // Extracting All Users from my chats means friends or people I have chatted with
-  // const allUsersFromMyChats = myChats.map((chat) => chat.members).flat();
+  //  extracting All Users from my chats means friends or people I have chatted with
   const allUsersFromMyChats = myChats.flatMap((chat) => chat.members);
 
-  // FInding all users except me and my friends
+  // Finding all users except me and my friends
   const allUsersExceptMeAndFriends = await User.find({
     _id: { $nin: allUsersFromMyChats },
     name: { $regex: name, $options: "i" },
   });
 
+  // Modifying the response
   const users = allUsersExceptMeAndFriends.map(({ _id, name, avatar }) => ({
     _id,
     name,
@@ -189,7 +171,7 @@ const acceptFriendRequest = TryCatch(async (req, res, next) => {
   });
 });
 
-const getMyNotifications = TryCatch(async (req, res, next) => {
+const getMyNotifications = TryCatch(async (req, res) => {
   const requests = await Request.find({ receiver: req.user }).populate(
     "sender",
     "name avatar"
@@ -210,7 +192,7 @@ const getMyNotifications = TryCatch(async (req, res, next) => {
   });
 });
 
-const getMyFriends = TryCatch(async (req, res, next) => {
+const getMyFriends = TryCatch(async (req, res) => {
   const chatId = req.query.chatId;
 
   const chats = await Chat.find({
@@ -248,13 +230,13 @@ const getMyFriends = TryCatch(async (req, res, next) => {
 });
 
 export {
-  login,
-  newUser,
+  acceptFriendRequest,
+  getMyFriends,
+  getMyNotifications,
   getMyProfile,
+  login,
   logout,
+  newUser,
   searchUser,
   sendFriendRequest,
-  acceptFriendRequest,
-  getMyNotifications,
-  getMyFriends,
 };

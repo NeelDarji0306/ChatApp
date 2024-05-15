@@ -17,7 +17,7 @@ app.post("/verify", adminLoginValidator(), validateHandler, adminLogin);
 
 app.get("/logout", adminLogout);
 
-// Only admin can access this routes
+// Only Admin Can Accecss these Routes
 
 app.use(adminOnly);
 

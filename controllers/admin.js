@@ -24,7 +24,7 @@ const adminLogin = TryCatch(async (req, res, next) => {
     })
     .json({
       success: true,
-      message: "Authenticated Successfully, Welcome Boss",
+      message: "Authenticated Successfully, Welcome BOSS",
     });
 });
 
@@ -37,7 +37,7 @@ const adminLogout = TryCatch(async (req, res, next) => {
     })
     .json({
       success: true,
-      message: "Logged out successfully",
+      message: "Logged Out Successfully",
     });
 });
 
@@ -47,10 +47,10 @@ const getAdminData = TryCatch(async (req, res, next) => {
   });
 });
 
-const allUsers = TryCatch(async (req, res, next) => {
+const allUsers = TryCatch(async (req, res) => {
   const users = await User.find({});
 
-  const transformUsers = await Promise.all(
+  const transformedUsers = await Promise.all(
     users.map(async ({ name, username, avatar, _id }) => {
       const [groups, friends] = await Promise.all([
         Chat.countDocuments({ groupChat: true, members: _id }),
@@ -60,8 +60,8 @@ const allUsers = TryCatch(async (req, res, next) => {
       return {
         name,
         username,
-        _id,
         avatar: avatar.url,
+        _id,
         groups,
         friends,
       };
@@ -70,16 +70,16 @@ const allUsers = TryCatch(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    users: transformUsers,
+    users: transformedUsers,
   });
 });
 
-const allChats = TryCatch(async (req, res, next) => {
+const allChats = TryCatch(async (req, res) => {
   const chats = await Chat.find({})
     .populate("members", "name avatar")
     .populate("creator", "name avatar");
 
-  const transformChats = await Promise.all(
+  const transformedChats = await Promise.all(
     chats.map(async ({ members, _id, groupChat, name, creator }) => {
       const totalMessages = await Message.countDocuments({ chat: _id });
 
@@ -105,16 +105,16 @@ const allChats = TryCatch(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    chats: transformChats,
+    chats: transformedChats,
   });
 });
 
-const allMessages = TryCatch(async (req, res, next) => {
+const allMessages = TryCatch(async (req, res) => {
   const messages = await Message.find({})
     .populate("sender", "name avatar")
     .populate("chat", "groupChat");
 
-  const transformMessages = messages.map(
+  const transformedMessages = messages.map(
     ({ content, attachments, _id, sender, createdAt, chat }) => ({
       _id,
       attachments,
@@ -131,12 +131,12 @@ const allMessages = TryCatch(async (req, res, next) => {
   );
 
   return res.status(200).json({
-    status: "success",
-    messages: transformMessages,
+    success: true,
+    messages: transformedMessages,
   });
 });
 
-const getDashboardStats = TryCatch(async (req, res, next) => {
+const getDashboardStats = TryCatch(async (req, res) => {
   const [groupsCount, usersCount, messagesCount, totalChatsCount] =
     await Promise.all([
       Chat.countDocuments({ groupChat: true }),
@@ -158,11 +158,11 @@ const getDashboardStats = TryCatch(async (req, res, next) => {
   }).select("createdAt");
 
   const messages = new Array(7).fill(0);
-  const oneDayInMIlliseconds = 1000 * 60 * 60 * 24;
+  const dayInMiliseconds = 1000 * 60 * 60 * 24;
 
   last7DaysMessages.forEach((message) => {
     const indexApprox =
-      (today.getTime() - message.createdAt.getTime()) / oneDayInMIlliseconds;
+      (today.getTime() - message.createdAt.getTime()) / dayInMiliseconds;
     const index = Math.floor(indexApprox);
 
     messages[6 - index]++;
@@ -177,7 +177,7 @@ const getDashboardStats = TryCatch(async (req, res, next) => {
   };
 
   return res.status(200).json({
-    status: "success",
+    success: true,
     stats,
   });
 });

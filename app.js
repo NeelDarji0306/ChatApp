@@ -33,9 +33,7 @@ dotenv.config({
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
 const envMode = process.env.NODE_ENV.trim() || "PRODUCTION";
-const adminSecretKey =
-  process.env.ADMIN_SECRET_KEY || "esfjkrsrgjsasdhjsdvffhsd";
-// currently active users
+const adminSecretKey = process.env.ADMIN_SECRET_KEY || "adsasdsdfsdfsdfd";
 const userSocketIDs = new Map();
 const onlineUsers = new Set();
 
@@ -52,12 +50,11 @@ const server = createServer(app);
 const io = new Server(server, {
   cors: corsOptions,
 });
+
 app.set("io", io);
 
-//using middlewares here
+// Using Middlewares Here
 app.use(express.json());
-// app.use(express.urlencoded());                      // for accessing from data but  we will not use it since we need muultipart form data like avatar, attechmentes so we will be using MULTER instead
-// I have created multer.js in utils>feature.js file, whenever form data is needed we will use that as middleware
 app.use(cookieParser());
 app.use(cors(corsOptions));
 
@@ -66,20 +63,19 @@ app.use("/api/v1/chat", chatRoute);
 app.use("/api/v1/admin", adminRoute);
 
 app.get("/", (req, res) => {
-  res.send("Welcome");
+  res.send("Hello World");
 });
 
-// rather than passing token in options in io.on connection, we will use middleware to access token , if verified we'll call next otherwise error
 io.use((socket, next) => {
-  cookieParser()(socket.request, socket.request.res, async (err) => {
-    await socketAuthenticator(err, socket, next);
-  });
+  cookieParser()(
+    socket.request,
+    socket.request.res,
+    async (err) => await socketAuthenticator(err, socket, next)
+  );
 });
 
 io.on("connection", (socket) => {
   const user = socket.user;
-
-  // currently active users
   userSocketIDs.set(user._id.toString(), socket.id);
 
   socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
@@ -100,7 +96,6 @@ io.on("connection", (socket) => {
       chat: chatId,
     };
 
-    // particular users to whom we need to send messages
     const membersSocket = getSockets(members);
     io.to(membersSocket).emit(NEW_MESSAGE, {
       chatId,
@@ -148,9 +143,8 @@ io.on("connection", (socket) => {
 
 app.use(errorMiddleware);
 
-// app.listen(port, () => {       before using socket.io
 server.listen(port, () => {
-  console.log(`server is listening on port ${port} in ${envMode} mode`);
+  console.log(`Server is running on port ${port} in ${envMode} Mode`);
 });
 
-export { adminSecretKey, envMode, userSocketIDs };
+export { envMode, adminSecretKey, userSocketIDs };

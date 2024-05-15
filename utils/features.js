@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import { v2 as cloudinary } from "cloudinary";
 import { v4 as uuid } from "uuid";
+import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
 
 const cookieOptions = {
@@ -14,7 +14,7 @@ const cookieOptions = {
 const connectDB = (uri) => {
   mongoose
     .connect(uri, { dbName: "ChatApp" })
-    .then((data) => console.log(`Connected to DB:${data.connection.host}`))
+    .then((data) => console.log(`Connected to DB: ${data.connection.host}`))
     .catch((err) => {
       throw err;
     });
@@ -25,8 +25,8 @@ const sendToken = (res, user, code, message) => {
 
   return res.status(code).cookie("chat-app-token", token, cookieOptions).json({
     success: true,
-    message,
     user,
+    message,
   });
 };
 
@@ -34,8 +34,6 @@ const emitEvent = (req, event, users, data) => {
   const io = req.app.get("io");
   const usersSocket = getSockets(users);
   io.to(usersSocket).emit(event, data);
-
-  console.log("Emitting event", event);
 };
 
 const uploadFilesToCloudinary = async (files = []) => {
@@ -47,30 +45,29 @@ const uploadFilesToCloudinary = async (files = []) => {
           resource_type: "auto",
           public_id: uuid(),
         },
-        (err, result) => {
-          if (err) reject(err);
+        (error, result) => {
+          if (error) return reject(error);
           resolve(result);
         }
       );
     });
   });
+
   try {
     const results = await Promise.all(uploadPromises);
 
-    const formattedResult = results.map((result) => {
-      return {
-        public_id: result.public_id,
-        url: result.secure_url,
-      };
-    });
-    return formattedResult;
-  } catch (error) {
-    throw new Error("Error uploading files to cloudinary", error);
+    const formattedResults = results.map((result) => ({
+      public_id: result.public_id,
+      url: result.secure_url,
+    }));
+    return formattedResults;
+  } catch (err) {
+    throw new Error("Error uploading files to cloudinary", err);
   }
 };
 
-const deleteFileFromCloudinary = async (public_ids) => {
-  // Delete file from cloudinary
+const deletFilesFromCloudinary = async (public_ids) => {
+  // Delete files from cloudinary
 };
 
 export {
@@ -78,6 +75,6 @@ export {
   sendToken,
   cookieOptions,
   emitEvent,
-  deleteFileFromCloudinary,
+  deletFilesFromCloudinary,
   uploadFilesToCloudinary,
 };
